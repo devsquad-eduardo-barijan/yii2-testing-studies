@@ -4,12 +4,16 @@ namespace tests\unit\models;
 
 use app\models\User;
 use app\tests\unit\fixtures\UserFixture;
+use UnitTester;
+use yii\base\NotSupportedException;
 use yii\web\IdentityInterface;
 
 class UserTest extends \Codeception\Test\Unit
 {
     /** @var User */
     private $_user = null;
+
+    protected UnitTester $tester;
 
     protected function setUp(): void
     {
@@ -36,18 +40,17 @@ class UserTest extends \Codeception\Test\Unit
         $configurationParams = [
             'username' => 'a valid username',
             'password' => 'a valid password',
-            'authKey' => 'a valid authkey'
+            'authkey' => 'a valid authkey'
         ];
 
         $user = new User($configurationParams);
         $this->assertTrue($user->validate(), 'User with set parameters should validate');
     }
 
-    /**
-     * @expectedException yii\base\NotSupportedException 
-     */
     public function testFindIdentityByAccessTokenReturnsTheExpectedObject()
     {
+        $this->expectException(NotSupportedException::class);
+
         User::findIdentityByAccessToken('anyAccessToken');
     }
 
@@ -60,14 +63,14 @@ class UserTest extends \Codeception\Test\Unit
 
     public function testGetAuthkeyReturnsTheExpectedAuthkey()
     {
-        $this->_user->authKey = 'someauth';
+        $this->_user->authkey = 'someauth';
 
         $this->assertEquals('someauth', $this->_user->getAuthKey());
     }
 
     public function testFindIdentityReturnsTheExpectedObject()
     {
-        $expectedAttrs = $this->user['admin'];
+        $expectedAttrs = $this->tester->grabFixture('user', 'admin');
 
         /** @var User $user */
         $user = User::findIdentity($expectedAttrs['id']);
@@ -76,13 +79,13 @@ class UserTest extends \Codeception\Test\Unit
         $this->assertInstanceOf(IdentityInterface::class, $user);
         $this->assertEquals($expectedAttrs['username'], $user->username);
         $this->assertEquals($expectedAttrs['password'], $user->password);
-        $this->assertEquals($expectedAttrs['authKey'], $user->authKey);
+        $this->assertEquals($expectedAttrs['authkey'], $user->authkey);
     }
 
     /** 
      * @dataProvider nonExistingIdsDataProvider
      */
-    public function testFindIdentityReturnsNullIfIfUserIsNotFound($invalidId)
+    public function testFindIdentityReturnsNullIfUserIsNotFound($invalidId)
     {
         $this->assertNull(User::findIdentity($invalidId));
     }
@@ -94,7 +97,7 @@ class UserTest extends \Codeception\Test\Unit
 
     public function testFindByUsernameReturnsTheExpectedObject()
     {
-        $expectedAttrs = $this->user['admin'];
+        $expectedAttrs = $this->tester->grabFixture('user', 'admin');
 
         /** @var User $user */
         $user = User::findByUsername($expectedAttrs['username']);
@@ -103,13 +106,13 @@ class UserTest extends \Codeception\Test\Unit
         $this->assertInstanceOf(IdentityInterface::class, $user);
         $this->assertEquals($expectedAttrs['username'], $user->username);
         $this->assertEquals($expectedAttrs['password'], $user->password);
-        $this->assertEquals($expectedAttrs['authKey'], $user->authKey);
+        $this->assertEquals($expectedAttrs['authkey'], $user->authkey);
     }
 
     /** 
      * @dataProvider nonExistingNamesDataProvider
      */
-    public function testFindByUsernameReturnsNullIfIfUserIsNotFound($invalidNames)
+    public function testFindByUsernameReturnsNullIfUserIsNotFound($invalidNames)
     {
         $this->assertNull(User::findByUsername($invalidNames));
     }
