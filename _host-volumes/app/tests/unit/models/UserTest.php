@@ -4,6 +4,7 @@ namespace tests\unit\models;
 
 use app\models\User;
 use app\tests\unit\fixtures\UserFixture;
+use Codeception\Stub\Expected;
 use InvalidArgumentException;
 use UnitTester;
 use Yii;
@@ -146,6 +147,32 @@ class UserTest extends \Codeception\Test\Unit
 
         $this->_user->password = $password;
         $this->_user->validatePassword($wrongPassword);
+    }
+
+    public function testSetPasswordEncryptsThePasswordCorrectly()
+    {
+        $clearTextPassword = 'some password';
+        $encryptedPassword = 'encrypted password';
+
+        $this->_mockYiiSecurity($encryptedPassword);
+
+        $this->_user->setPassword($clearTextPassword);
+
+        $this->assertNotEquals($clearTextPassword, $this->_user->password);
+        $this->assertEquals($encryptedPassword, $this->_user->password);
+    }
+
+    public function testSetPasswordCallsGeneratePasswordHash()
+    {
+        $clearTextPassword = 'some password';
+
+        $security = $this->make(Security::class, [
+            'generatePasswordHash' => Expected::once($clearTextPassword)
+        ]);
+
+        Yii::$app->set('security', $security);
+
+        $this->_user->setPassword($clearTextPassword);
     }
 
     /**

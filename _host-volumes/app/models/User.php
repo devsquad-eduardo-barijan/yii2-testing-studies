@@ -102,4 +102,9 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
             $this->password
         );
     }
+
+    public function setPassword($password)
+    {
+        $this->password = Yii::$app->security->generatePasswordHash($password);
+    }
 }
