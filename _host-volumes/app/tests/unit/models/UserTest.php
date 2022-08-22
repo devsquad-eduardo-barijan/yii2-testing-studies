@@ -4,9 +4,12 @@ namespace tests\unit\models;
 
 use app\models\User;
 use app\tests\unit\fixtures\UserFixture;
+use InvalidArgumentException;
 use UnitTester;
 use Yii;
+use yii\base\InvalidParamException;
 use yii\base\NotSupportedException;
+use yii\base\Security;
 use yii\web\IdentityInterface;
 
 class UserTest extends \Codeception\Test\Unit
@@ -126,44 +129,46 @@ class UserTest extends \Codeception\Test\Unit
     public function testValidatePasswordReturnsTrueIfPasswordIsCorrect()
     {
         $expectedPassword = 'valid password';
+        $this->_mockYiiSecurity($expectedPassword);
 
         $this->_user->password = Yii::$app->getSecurity()->generatePasswordHash($expectedPassword);
 
         $this->assertTrue($this->_user->validatePassword($expectedPassword));
     }
 
-    // public function testFindUserById()
-    // {
-    //     expect_that($user = User::findIdentity(100));
-    //     expect($user->username)->equals('admin');
+    public function testValidatePasswordThrowsInvalidParamExceptionIfPasswordIsIncorrect()
+    {
+        $this->expectException(InvalidArgumentException::class);
 
-    //     expect_not(User::findIdentity(999));
-    // }
+        $password = 'some password';
+        $wrongPassword = 'some other password';
+        $this->_mockYiiSecurity($password, $wrongPassword);
 
-    // public function testFindUserByAccessToken()
-    // {
-    //     expect_that($user = User::findIdentityByAccessToken('100-token'));
-    //     expect($user->username)->equals('admin');
+        $this->_user->password = $password;
+        $this->_user->validatePassword($wrongPassword);
+    }
 
-    //     expect_not(User::findIdentityByAccessToken('non-existing'));
-    // }
+    /**
+     * Mocks the Yii security module, so we can make it return what we need
+     *
+     * @param string $expectedPassword the password used for encoding and
+     * validating if the second parameter is not set
+     * 
+     * @param mixed $wrongPassword if passed, validatePassword will thrown an
+     * InvalidArgumentException when presenting this string
+     */
+    private function _mockYiiSecurity($expectedPassword, $wrongPassword = false)
+    {
+        $security = $this->make(Security::class, [
+            'validatePassword' => function () use ($wrongPassword) {
+                if ($wrongPassword) {
+                    throw new InvalidArgumentException();
+                }
+                return true;
+            },
+            'generatePasswordHash' => $expectedPassword
+        ]);
 
-    // public function testFindUserByUsername()
-    // {
-    //     expect_that($user = User::findByUsername('admin'));
-    //     expect_not(User::findByUsername('not-admin'));
-    // }
-
-    // /**
-    //  * @depends testFindUserByUsername
-    //  */
-    // public function testValidateUser($user)
-    // {
-    //     $user = User::findByUsername('admin');
-    //     expect_that($user->validateAuthKey('test100key'));
-    //     expect_not($user->validateAuthKey('test102key'));
-
-    //     expect_that($user->validatePassword('admin'));
-    //     expect_not($user->validatePassword('123456'));
-    // }
+        Yii::$app->set('security', $security);
+    }
 }
