@@ -5,6 +5,7 @@ namespace tests\unit\models;
 use app\models\User;
 use app\tests\unit\fixtures\UserFixture;
 use UnitTester;
+use Yii;
 use yii\base\NotSupportedException;
 use yii\web\IdentityInterface;
 
@@ -120,6 +121,15 @@ class UserTest extends \Codeception\Test\Unit
     public function nonExistingNamesDataProvider()
     {
         return [[''], [null], ['somename']];
+    }
+
+    public function testValidatePasswordReturnsTrueIfPasswordIsCorrect()
+    {
+        $expectedPassword = 'valid password';
+
+        $this->_user->password = Yii::$app->getSecurity()->generatePasswordHash($expectedPassword);
+
+        $this->assertTrue($this->_user->validatePassword($expectedPassword));
     }
 
     // public function testFindUserById()
